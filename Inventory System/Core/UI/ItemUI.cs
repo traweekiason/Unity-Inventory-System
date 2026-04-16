@@ -1,9 +1,9 @@
-using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class ItemUI : MonoBehaviour,IDragHandler, IBeginDragHandler, IEndDragHandler
+public class ItemUI : MonoBehaviour,IDragHandler, IBeginDragHandler, IEndDragHandler, IDropHandler
 {
     
     [HideInInspector] public Vector2Int gridPosition; 
@@ -14,7 +14,24 @@ public class ItemUI : MonoBehaviour,IDragHandler, IBeginDragHandler, IEndDragHan
     [HideInInspector] public Transform dragLayer;
 
     [HideInInspector] public bool isDragging = false;
+    public Text text;
 
+    public void Start()
+    {
+        text = GetComponentInChildren<Text>();
+    }
+    public void Update()
+    {
+        InventoryItemInstance instance = GetItem();
+
+        if (instance != null)
+        {   
+            if (instance.inventoryItem.stackable)
+            {
+                text.text = "x" + (instance.stack);
+            }
+        }
+    }
 
     public InventoryItemInstance GetItem()
     {
@@ -44,4 +61,24 @@ public class ItemUI : MonoBehaviour,IDragHandler, IBeginDragHandler, IEndDragHan
         transform.SetParent(parent);
 
     }
+    public virtual void OnDrop(PointerEventData data)
+    {
+        GameObject dragObject = data.pointerDrag;
+        if (dragObject == null) return;
+
+        ItemUI dragItemUI = dragObject.GetComponent<ItemUI>();
+        if (dragItemUI == null) return;
+
+        InventoryItemInstance dragItemInstance = dragItemUI.GetItem();
+        InventoryItemInstance thisItem = GetItem();
+
+        int moved = inventory.AddToStack(thisItem, dragItemInstance);
+
+        if (moved > 0 && dragItemInstance.stack <= 0)
+        {
+            dragItemUI.inventory.RemoveItem(dragItemInstance);
+            Destroy(dragObject);
+        }
+    }
+
 }

@@ -5,9 +5,11 @@ public class InventoryItemInstance
 {
     public string uid;
     public InventoryItem inventoryItem;
-    public InventoryItemInstance(InventoryItem item)
+    public int stack = 0;
+    public InventoryItemInstance(InventoryItem item, int initialStack = 1)
     {
         inventoryItem = item;
+        stack = initialStack;
         uid = Guid.NewGuid().ToString();
     }
 }

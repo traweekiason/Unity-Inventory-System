@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,13 +8,14 @@ public class InventoryUI : MonoBehaviour
     public Inventory inventory;
     public GameObject cellPrefab;
     public GameObject itemPrefab;
-    public Transform dragLayer;
-    GameObject cellContainer;
-    GameObject itemContainer;
 
-    GameObject[,] cells;
-    List<GameObject> spawnedItems;
-    bool hasStarted = false;
+    public Transform dragLayer;
+    public GameObject cellContainer;
+    public GameObject itemContainer;
+
+    public GameObject[,] cells;
+    public List<GameObject> spawnedItems;
+    public bool hasStarted = false;
 
 
     // ─── Unity Lifecycle ──────────────────────────────────────────────────────
@@ -27,8 +27,8 @@ public class InventoryUI : MonoBehaviour
 
     private void Start()
     {
-        cellContainer = transform.Find("CellContainer").gameObject;
-        itemContainer = transform.Find("ItemContainer").gameObject;
+        cellContainer = transform.GetChild(0).gameObject;
+        itemContainer = transform.GetChild(1).gameObject;
 
         GetComponent<RectTransform>().sizeDelta = new Vector2(64 * inventory.width, 64 * inventory.height);
 
@@ -54,6 +54,8 @@ public class InventoryUI : MonoBehaviour
     {
         if (inventory != null)
             inventory.OnInventoryChanged -= Refresh;
+        
+        Refresh();
     }
 
 
@@ -89,12 +91,21 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
-    public void Refresh()
+    public virtual void Refresh()
     {
         if (inventory == null || cells == null) return;
 
+        // In InventoryUI.Refresh()
         foreach (Transform child in itemContainer.transform)
+        {
+            ItemUI ui = child.GetComponent<ItemUI>();
+
+            // Don't destroy the item currently being dragged
+            if (ui != null && ui.isDragging)
+                continue;
+
             Destroy(child.gameObject);
+        }
 
         spawnedItems.Clear();
 
@@ -106,10 +117,12 @@ public class InventoryUI : MonoBehaviour
                 if (cells[x, y] == null) continue;
 
                 GameObject newItem = Instantiate(itemPrefab, itemContainer.transform);
+
                 if (newItem == null) continue;
 
                 InventoryItemInstance itemInstance = inventory.items[x, y];
                 RectTransform cellRect = cells[x, y].GetComponent<RectTransform>();
+
                 ItemUI itemUI = newItem.GetComponent<ItemUI>();
 
                 newItem.GetComponent<RawImage>().texture = itemInstance.inventoryItem.icon;
@@ -122,6 +135,7 @@ public class InventoryUI : MonoBehaviour
                 newItem.GetComponent<RectTransform>().position = cellRect.position;
 
                 spawnedItems.Add(newItem);
+
             }
         }
     }
