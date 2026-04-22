@@ -1,77 +1,3 @@
-using System;
-using System.Collections;
-using System.Runtime.InteropServices.WindowsRuntime;
-using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.ProBuilder.MeshOperations;
-
-public class Inventory : MonoBehaviour
-{
-    [Header("Main")]
-    public int width;
-    public int height;
-    public float maxWeight;
-    public float maxVolume;
-
-    [HideInInspector] public InventoryItemInstance[,] items;
-    [HideInInspector] float currentWeight;
-    [HideInInspector] float currentVolume;
-
-    [Header("Drag-Ins")]
-    public InventoryUI inventoryUI;
-    public InventoryItemCatalog itemCatalog;
-    public GameObject canvas;
-    public GameObject dropPointObject;
-
-    public event Action OnInventoryChanged;
-
-    bool isVisible = false;
-
-
-    // ─── Unity Lifecycle ──────────────────────────────────────────────────────
-
-    void Start()
-    {
-        items = new InventoryItemInstance[width, height];
-
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-        canvas.SetActive(false);
-
-        OnInventoryChanged?.Invoke();
-    }
-
-
-    // ─── Public API ───────────────────────────────────────────────────────────
-
-    public void InvokeOnInventoryChanged()
-    {
-        OnInventoryChanged?.Invoke();
-    }
-
-    public void ToggleInventory(InputAction.CallbackContext ctx)
-    {
-        if (!ctx.performed) return;
-
-        isVisible = !isVisible;
-        Cursor.visible = isVisible;
-
-        if (isVisible)
-        {
-            Cursor.lockState = CursorLockMode.None;
-            canvas.SetActive(true);
-            OnInventoryChanged?.Invoke();
-        }
-        else
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            canvas.SetActive(false);
-            OnInventoryChanged?.Invoke();
-        }
-
-        inventoryUI.Refresh();
-    }
-
     // ADDING AN ITEM FOLLOWS THIS PATH 
     // Note: TryPlaceItem() function can return void. 
     //
@@ -90,8 +16,105 @@ public class Inventory : MonoBehaviour
     //      -- Item is not present. Set the itemInstance to the cell at the position
     //  4. Return true or false to check if it worked. 
 
-    public Vector2Int FindAvailablePosition(InventoryItemInstance itemInstance)
+using System;
+using System.Collections;
+using Unity.Collections;
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+
+
+public class Inventory : MonoBehaviour
+{
+    [Header("Main")]
+    public int width = 4;
+    public int height = 5;
+    public float maxWeight;
+    public float maxVolume;
+
+    public ItemInstance[,] items;
+    [HideInInspector] float currentWeight;
+    [HideInInspector] float currentVolume;
+
+    [Header("Drag-Ins")]
+    // public InventoryUI inventoryUI;
+    public ItemCatalog itemCatalog;
+    public GameObject canvas;
+    public GameObject dropPointObject;
+
+    public event Action OnInventoryChanged;
+
+    bool isVisible = false;
+
+
+    // ─── Unity Lifecycle ──────────────────────────────────────────────────────
+
+    void Start()
     {
+        // Creates the grid for the items. ItemInstance holds Item data
+        items = new ItemInstance[width, height];
+
+
+        // Set the cursor state for initialization 
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        
+        canvas.SetActive(false);
+
+        OnInventoryChanged?.Invoke();
+    }
+
+
+    // ─── Public API ───────────────────────────────────────────────────────────
+
+    public void InvokeOnInventoryChanged()
+    {
+        OnInventoryChanged?.Invoke();
+    }
+
+
+    public void ToggleInventory(InputAction.CallbackContext ctx)
+    {
+        if (!ctx.performed) return;
+
+        isVisible = !isVisible;
+        Cursor.visible = isVisible;
+
+        if (isVisible)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            canvas.SetActive(true);
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            canvas.SetActive(false);
+        }
+
+        OnInventoryChanged?.Invoke();
+    }
+
+    public Vector2Int FindAvailablePosition(ItemInstance itemInstance)
+    {
+        if (itemInstance == null)
+        {
+            return new Vector2Int(-1, -1);
+        }
+
+        if (itemInstance.inventoryItem.stackable)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                for (int y = 0; y < height; ++y)
+                {
+                    if (items[x,y] != null && items[x,y].inventoryItem.id == itemInstance.inventoryItem.id && items[x,y].stack < items[x,y].inventoryItem.maxStack)
+                    {
+                        return new Vector2Int(x,y);
+                    }
+                }
+            }
+        }
+
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -100,25 +123,20 @@ public class Inventory : MonoBehaviour
                 {
                     return new Vector2Int(x,y);
                 }
-                else
-                {
-                    if (items[x,y].inventoryItem.id == itemInstance.inventoryItem.id && items[x,y].inventoryItem.stackable == true)
-                    {
-                        if (items[x,y].stack < items[x,y].inventoryItem.maxStack)
-                            return new Vector2Int(x,y);
-
-                    }
-                }
             }
         }
+
+
         return new Vector2Int(-1, -1);
     }
-    public bool CanPlaceItem(InventoryItemInstance item, Vector2Int position)
+    public bool CanPlaceItem(ItemInstance item, Vector2Int position)
     {
         bool withinWeightLimit = currentWeight + item.inventoryItem.weight <= maxWeight;
         bool withinVolumeLimit = currentVolume + item.inventoryItem.volume <= maxVolume;
 
         bool positionInIndex = true;
+
+
 
         if (position == new Vector2Int(-1, -1))
         {
@@ -128,13 +146,27 @@ public class Inventory : MonoBehaviour
         return withinWeightLimit && withinVolumeLimit && positionInIndex;
     }
 
-    public bool TryPlaceItem(InventoryItemInstance item, Vector2Int position)
+    public bool PlaceItem(ItemInstance item, Vector2Int position)
     {
         if (!CanPlaceItem(item, position)) return false;
 
         if (items[position.x, position.y] != null)
         {
-            items[position.x, position.y].stack += item.stack; // ← instance stack
+            int stackDifference = items[position.x, position.y].inventoryItem.maxStack - items[position.x, position.y].stack;
+
+            if (item.stack > stackDifference)
+            {
+                item.stack -= stackDifference;
+                items[position.x, position.y].stack += stackDifference;
+
+                PlaceItem(item, FindAvailablePosition(item));
+            }
+            else
+            {
+                items[position.x, position.y].stack += item.stack;
+            }
+
+            //items[position.x, position.y].stack += item.stack; // ← instance stack
             // print(items[position.x, position.y].stack);
             RecalculateWeightAndVolume();
             OnInventoryChanged?.Invoke();
@@ -147,7 +179,7 @@ public class Inventory : MonoBehaviour
         return true;
     }
 
-    public void RemoveItem(InventoryItemInstance item)
+    public void RemoveItem(ItemInstance item)
     {
         for (int x = 0; x < width; x++)
         {
@@ -164,7 +196,7 @@ public class Inventory : MonoBehaviour
         }
     }
 
-    public bool MoveItem(Vector2Int destination, InventoryItemInstance item)
+    public bool MoveItem(Vector2Int destination, ItemInstance item)
     {
         if (items[destination.x, destination.y] != null) return false;
 
@@ -185,7 +217,7 @@ public class Inventory : MonoBehaviour
         return false;
     }
 
-    public int AddToStack(InventoryItemInstance target, InventoryItemInstance source)
+    public int AddToStack(ItemInstance target, ItemInstance source)
     {
         if (target == null || source == null) return 0;
 
@@ -213,12 +245,12 @@ public class Inventory : MonoBehaviour
     }
 
 
-    public InventoryItemInstance CreateItem(string itemId)
+    public ItemInstance CreateItem(string itemId)
     {
-        InventoryItem definition = itemCatalog.GetItem(itemId);
+        Item definition = itemCatalog.GetItem(itemId);
         if (definition == null) return null;
 
-        return new InventoryItemInstance(definition);
+        return new ItemInstance(definition);
     }
 
     public int ItemCount()
@@ -234,6 +266,22 @@ public class Inventory : MonoBehaviour
         }
 
         return count;
+    }
+
+    public void DropItem(ItemInstance itemInstance, GameObject itemui)
+    {
+        GameObject droppedItem = Instantiate(itemInstance.inventoryItem.worldObject, null);
+
+        droppedItem.transform.position = dropPointObject.transform.position;
+        droppedItem.transform.rotation = dropPointObject.transform.rotation;
+        droppedItem.transform.Rotate(new Vector3(0, 90, 0 ));
+
+        WorldObject script = droppedItem.GetComponent<WorldObject>();
+        script.itemInstance = itemInstance;
+
+        RemoveItem(itemInstance);
+
+        Destroy(itemui);
     }
 
 
@@ -264,4 +312,5 @@ public class Inventory : MonoBehaviour
             }
         }
     }
+
 }

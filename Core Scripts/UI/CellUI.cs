@@ -4,25 +4,35 @@ using UnityEngine.UI;
 
 public class CellUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IDropHandler
 {
+    public Color defaultColor;
+    public Color hoverColor;
     [HideInInspector] public Vector2Int gridPosition;
     [HideInInspector] public Inventory inventory;
-    [HideInInspector] public bool occupied = false;
+
+    RawImage rawImage;
+
+    private void Start()
+    {
+        rawImage = GetComponent<RawImage>();
+
+        rawImage.color = defaultColor;
+    }
 
     InventoryManager inventoryManager = new InventoryManager();
 
     public void OnPointerEnter(PointerEventData data)
     {
-        GetComponent<RawImage>().color = Color.beige;
+        rawImage.color = hoverColor;
     }
     public void OnPointerExit(PointerEventData data)
     {
-        GetComponent<RawImage>().color = Color.white;
+       rawImage.color = defaultColor;
     }
     public void OnDrop(PointerEventData data)
     {
         
         GameObject draggedItem = data.pointerDrag;
-        InventoryItemInstance item = draggedItem.GetComponent<ItemUI>().GetItem();
+        ItemInstance item = draggedItem.GetComponent<ItemUI>().GetItem();
         Inventory from = draggedItem.GetComponent<ItemUI>().inventory;
 
         if (gridPosition == draggedItem.GetComponent<ItemUI>().gridPosition && inventory == from)

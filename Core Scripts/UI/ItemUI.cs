@@ -14,6 +14,8 @@ public class ItemUI : MonoBehaviour,IDragHandler, IBeginDragHandler, IEndDragHan
     [HideInInspector] public Transform dragLayer;
 
     [HideInInspector] public bool isDragging = false;
+    public ContextMenu contextMenu;
+    
     public Text text;
 
     public void Start()
@@ -22,7 +24,7 @@ public class ItemUI : MonoBehaviour,IDragHandler, IBeginDragHandler, IEndDragHan
     }
     public void Update()
     {
-        InventoryItemInstance instance = GetItem();
+        ItemInstance instance = GetItem();
 
         if (instance != null)
         {   
@@ -33,9 +35,9 @@ public class ItemUI : MonoBehaviour,IDragHandler, IBeginDragHandler, IEndDragHan
         }
     }
 
-    public InventoryItemInstance GetItem()
+    public ItemInstance GetItem()
     {
-        InventoryItemInstance item = inventory.items[gridPosition.x, gridPosition.y];
+        ItemInstance item = inventory.items[gridPosition.x, gridPosition.y];
         return item;
     }
 
@@ -46,7 +48,6 @@ public class ItemUI : MonoBehaviour,IDragHandler, IBeginDragHandler, IEndDragHan
         transform.SetParent(dragLayer);
 
         isDragging = true;
-
     }
 
     public void OnDrag(PointerEventData data)
@@ -69,8 +70,8 @@ public class ItemUI : MonoBehaviour,IDragHandler, IBeginDragHandler, IEndDragHan
         ItemUI dragItemUI = dragObject.GetComponent<ItemUI>();
         if (dragItemUI == null) return;
 
-        InventoryItemInstance dragItemInstance = dragItemUI.GetItem();
-        InventoryItemInstance thisItem = GetItem();
+        ItemInstance dragItemInstance = dragItemUI.GetItem();
+        ItemInstance thisItem = GetItem();
 
         int moved = inventory.AddToStack(thisItem, dragItemInstance);
 
@@ -80,5 +81,4 @@ public class ItemUI : MonoBehaviour,IDragHandler, IBeginDragHandler, IEndDragHan
             Destroy(dragObject);
         }
     }
-
 }

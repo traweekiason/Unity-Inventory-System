@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class InventoryManager 
 {
-    public bool TransferItem(Inventory from, Inventory to, InventoryItemInstance item, Vector2Int toPos)
+    public bool TransferItem(Inventory from, Inventory to, ItemInstance item, Vector2Int toPos)
     {
         if (to == from)
         {
@@ -11,7 +11,7 @@ public class InventoryManager
         }
         else
         {
-            if (to.TryPlaceItem(item, toPos) == true)
+            if (to.PlaceItem(item, toPos) == true)
             {
                 from.RemoveItem(item);
                 return true;

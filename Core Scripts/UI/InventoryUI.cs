@@ -10,15 +10,17 @@ public class InventoryUI : MonoBehaviour
     public GameObject itemPrefab;
 
     public Transform dragLayer;
-    public GameObject cellContainer;
-    public GameObject itemContainer;
+    [HideInInspector]GameObject cellContainer;
+    [HideInInspector]public GameObject itemContainer;
 
-    public GameObject[,] cells;
-    public List<GameObject> spawnedItems;
-    public bool hasStarted = false;
+    GameObject[,] cells;
+    List<GameObject> spawnedItems;
+
+    bool hasStarted = false;
 
 
     // ─── Unity Lifecycle ──────────────────────────────────────────────────────
+
 
     private void Awake()
     {
@@ -39,14 +41,16 @@ public class InventoryUI : MonoBehaviour
         BuildGrid(inventory.width, inventory.height);
 
         hasStarted = true;
-        Refresh();
     }
 
     private void OnEnable()
     {
         if (!hasStarted) return;
 
-        inventory.OnInventoryChanged += Refresh;
+        if (inventory != null)
+        {
+            inventory.OnInventoryChanged += Refresh;
+        }
         Refresh();
     }
 
@@ -120,7 +124,7 @@ public class InventoryUI : MonoBehaviour
 
                 if (newItem == null) continue;
 
-                InventoryItemInstance itemInstance = inventory.items[x, y];
+                ItemInstance itemInstance = inventory.items[x, y];
                 RectTransform cellRect = cells[x, y].GetComponent<RectTransform>();
 
                 ItemUI itemUI = newItem.GetComponent<ItemUI>();
@@ -131,6 +135,8 @@ public class InventoryUI : MonoBehaviour
                 itemUI.inventory = inventory;
                 itemUI.dragLayer = dragLayer;
                 itemUI.position = cells[x, y].transform.position;
+
+                itemUI.transform.position = cells[x,y].transform.position;
 
                 newItem.GetComponent<RectTransform>().position = cellRect.position;
 

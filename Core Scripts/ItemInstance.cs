@@ -1,12 +1,12 @@
 using System;
 using UnityEngine;
 
-public class InventoryItemInstance
+public class ItemInstance
 {
     public string uid;
-    public InventoryItem inventoryItem;
+    public Item inventoryItem;
     public int stack = 0;
-    public InventoryItemInstance(InventoryItem item, int initialStack = 1)
+    public ItemInstance(Item item, int initialStack = 1)
     {
         inventoryItem = item;
         stack = initialStack;
